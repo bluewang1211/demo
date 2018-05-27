@@ -1,0 +1,81 @@
+---
+
+- hosts: localhost
+  connection: local
+  gather_facts: smart
+  
+  vars:
+    service_account_email: 
+    credentials_file: 
+    project_id:
+    user_passwd: 
+
+  tasks:
+    - name: create lab-jump instances
+      gce:
+        instance_names: jump
+        zone: asia-east1-b
+        machine_type: g1-small
+        disk_size: 10
+        image: centos-7
+        state: present
+        service_account_email: "{{ service_account_email }}"
+        credentials_file: "{{ credentials_file }}"
+        project_id: "{{ project_id }}"
+      register: gce
+
+    - name: Save host data
+      add_host:
+        hostname: "{{ item.public_ip }}"
+        groupname: gce_instances_ips
+      with_items: "{{ gce.instance_data }}"
+
+    - name: Wait for SSH for instances
+      wait_for:
+        delay: 10
+        host: "{{ item.public_ip }}"
+        port: 22
+        state: started
+        timeout: 30
+      with_items: "{{ gce.instance_data }}"
+
+    - name: initial 
+      hosts: gce_instances_ips
+      become: yes
+      become_method: sudo
+      tasks:
+        - name: install ansible
+          yum:
+            name: ansible
+            state: present
+
+        - name: copy 'sshd_config' file to host
+          copy:
+            src: sshd_config
+            dest: /etc/ssh/sshd_config
+            backup: yes
+
+        - name: ssh restart
+          systemd:
+            name: sshd
+            state: restarted
+        
+        - name: create user account
+          user:
+            name: zhwang,ydli
+            groups: 
+            state: present
+            
+          
+    - name: create lab instances
+      gce:
+        instance_names: lab1,lab2,lab3
+        zone: asia-east1-b
+        machine_type: f1-mirco
+        disk_size: 10
+        image: centos-7
+        state: present
+        service_account_email: "{{ service_account_email }}"
+        credentials_file: "{{ credentials_file }}"
+        project_id: "{{ project_id }}"
+        
