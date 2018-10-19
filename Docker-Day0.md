@@ -31,4 +31,5 @@
   <li>動手做 - Metric</li>
   <li>進階觀念 - CI / CD Dockerfile</li>
   <li>動手做 - CI / CD Dockerfile</li>
+  <li>容器使用理念</li>
 </ol>
